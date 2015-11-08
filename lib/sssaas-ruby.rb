@@ -3,10 +3,18 @@ require 'net/http'
 require 'uri'
 require 'json'
 
-module SSSAAS
+module SSSaaS
     module API
         def self.get_secret(serveruris, tokens, secrets, timeout=300)
             results = secrets
+
+            unless serveruris.class == [].class
+                serveruris = [serveruris]
+            end
+
+            unless tokens.class == [].class
+                tokens = [tokens]
+            end
 
             threads = []
 
