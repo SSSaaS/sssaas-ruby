@@ -18,18 +18,33 @@ module SSSaaS
             end
 
             if obj["remote"].nil?
-                raise :invalid_config, "Invalid config object -- missing remote"
+                raise Exception.new("Invalid config object -- missing remote")
             end
 
-            if obj["shares"].nil? or obj["local"].nil? or
-                raise :invalid_config, "Invalid config object -- missing shares or local"
+            if obj["shares"].nil? and obj["local"].nil?
+                raise Exception.new("Invalid config object -- missing shares or local")
             end
 
             if obj["minimum"].nil?
-                raise :invalid_config, "Invalid config object -- missing minimum"
+                raise Exception.new("Invalid config object -- missing minimum")
             end
 
-            return self.get_secret()
+            if obj["local"]
+                if obj["shares"].nil?
+                    obj["shares"] = []
+                end
+
+                File.open(obj["local"], "r") do |f|
+                    f.each_line do |line|
+                        line = line.chomp!
+                        if SSSA::isValidShare? line
+                            obj["shares"].push line
+                        end
+                    end
+                end
+            end
+
+            return self.get_secret(obj["remote"], obj["shares"], obj["minimum"], obj["timeout"])
         end
 
         def self.get_secret(endpoints, shares, minimum, timeout=300)
@@ -38,17 +53,17 @@ module SSSaaS
             if endpoints.class == "string".class
                 endpoints = [endpoints]
             elsif endpoints.class != [].class
-                raise :invalid_config, "Invalid config object -- remote should be an array of URIs"
+                raise Exception.new("Invalid config object -- remote should be an array of URIs")
             end
 
             if shares.class == "string".class
                 shares = [shares]
             elsif shares.class != [].class
-                raise :invalid_config, "Invalid config object -- shares should be an array of shares"
+                raise Exception.new("Invalid config object -- shares should be an array of shares")
             end
 
-            unless minimum.class = 1234567890.class
-                raise :invalid_config, "Invalid config object -- shares should be an array of shares"
+            unless minimum.class == 1234567890.class
+                raise Exception.new("Invalid config object -- shares should be an array of shares")
             end
 
             tpool = []
